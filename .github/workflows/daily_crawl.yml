@@ -2,13 +2,17 @@ name: Daily K-Food News Crawler
 
 on:
   schedule:
-    # UTC 기준 23:00는 한국 시간(KST)으로 다음날 오전 8시입니다.
+    # 한국 시간(KST) 오전 8시는 UTC 기준 전날 23:00입니다.
     - cron: '0 23 * * *'
-  workflow_dispatch: # 수동으로 실행해볼 수 있는 버튼 생성
+  workflow_dispatch: # 언제든 수동으로 실행할 수 있는 버튼입니다.
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 저장소에 파일을 쓸 수 있는 권한을 코드상에서도 명시합니다.
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -33,5 +37,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add kfood_news_list.xlsx
-          git commit -m "Update news list [skip ci]" || echo "No changes to commit"
-          git push
+          
+          # 변경사항이 있는지 확인 후 푸시 (변경사항 없으면 에러 없이 통과)
+          if ! git diff --cached --exit-code; then
+            git commit -m "Update news list: $(date +'%Y-%m-%d')"
+            git push
+          else
+            echo "No changes to commit"
+          fi
